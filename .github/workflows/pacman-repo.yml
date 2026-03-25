@@ -55,21 +55,50 @@ jobs:
         run: |
           # Use an Arch Linux container via docker run to isolate the build environment
           docker run --rm -v ${{ github.workspace }}:/workspace archlinux:base-devel bash -c "
+            set -e
             pacman -Syu --noconfirm git sudo curl cmake ninja qt6-declarative wayland qt6-shadertools wayland-protocols cli11 spirv-tools
             
             cd /workspace
             mkdir -p pkgbuild-dir
             cd pkgbuild-dir
 
-            # Fetch AUR PKGBUILD materials
-            curl -sLO 'https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=quickshell-git'
-            curl -sLO 'https://aur.archlinux.org/cgit/aur.git/plain/quickshell-check.hook?h=quickshell-git'
-            mv 'PKGBUILD?h=quickshell-git' PKGBUILD
-            mv 'quickshell-check.hook?h=quickshell-git' quickshell-check.hook
+            # Fetch AUR quickshell-check.hook
+            curl -sL -o quickshell-check.hook 'https://aur.archlinux.org/cgit/aur.git/plain/quickshell-check.hook?h=quickshell-git'
             
-            # Patch URL and Source to build from our local workspace checkout rather than cloning from github again
-            sed -i 's|url=.*|url=\"https://github.com/${{ github.repository }}\"|g' PKGBUILD
-            sed -i 's|source=(.*|source=(\"quickshell::git+file:///workspace\" \"quickshell-check.hook\")|g' PKGBUILD
+            # Generate PKGBUILD from scratch to avoid formatting breaks
+            cat << 'EOF' > PKGBUILD
+            pkgname=quickshell-git
+            pkgver=1.0.0
+            pkgrel=1
+            pkgdesc=\"A quick shell\"
+            arch=('x86_64')
+            url=\"https://github.com/${{ github.repository }}\"
+            license=('GPL')
+            depends=('qt6-declarative' 'wayland')
+            makedepends=('spirv-tools' 'qt6-shadertools' 'wayland' 'wayland-protocols' 'cli11' 'ninja' 'cmake' 'git')
+            provides=('quickshell')
+            conflicts=('quickshell')
+            source=(\"quickshell::git+file:///workspace\" \"quickshell-check.hook\")
+            sha256sums=('SKIP' 'SKIP')
+            
+            pkgver() {
+              cd quickshell
+              git describe --long --tags --abbrev=7 --exclude='*[a-zA-Z][a-zA-Z]*' 2>/dev/null | sed -E 's/^[^0-9]*//;s/([^-]*-g)/r\1/;s/-/./g' || echo \"0.0.0.r\$(git rev-list --count HEAD).g\$(git rev-parse --short HEAD)\"
+            }
+            
+            build() {
+              cd quickshell
+              cmake -GNinja -B build -DCMAKE_BUILD_TYPE=\"RelWithDebInfo\" -DCMAKE_INSTALL_PREFIX=/usr -DDISTRIBUTOR=\"Custom\" -DDISTRIBUTOR_DEBUGINFO_AVAILABLE=NO -DINSTALL_QML_PREFIX=lib/qt6/qml
+              cmake --build build
+            }
+            
+            package() {
+              install -Dm644 \"../quickshell-check.hook\" -t \"\$pkgdir/usr/share/libalpm/hooks\" || true
+              cd quickshell
+              DESTDIR=\"\$pkgdir\" cmake --install build
+              install -Dm644 \"LICENSE\" -t \"\$pkgdir/usr/share/licenses/quickshell\" || true
+            }
+            EOF
             
             # Provide non-root user for makepkg
             useradd -m builduser
