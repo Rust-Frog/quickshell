@@ -56,7 +56,8 @@ jobs:
           # Use an Arch Linux container via docker run to isolate the build environment
           docker run --rm -v ${{ github.workspace }}:/workspace archlinux:base-devel bash -c "
             set -e
-            pacman -Syu --noconfirm git sudo curl cmake ninja qt6-declarative wayland qt6-shadertools wayland-protocols cli11 spirv-tools
+            # Update and install dependencies (ignore keyring errors if packages install fine)
+            pacman -Sy --noconfirm --needed git sudo curl cmake ninja qt6-declarative wayland qt6-shadertools wayland-protocols cli11 spirv-tools
             
             cd /workspace
             mkdir -p pkgbuild-dir
@@ -65,8 +66,8 @@ jobs:
             # Fetch AUR quickshell-check.hook
             curl -sL -o quickshell-check.hook 'https://aur.archlinux.org/cgit/aur.git/plain/quickshell-check.hook?h=quickshell-git'
             
-            # Generate PKGBUILD from scratch to avoid formatting breaks
-            cat << 'EOF' > PKGBUILD
+            # Generate PKGBUILD. Indented here, sed strips the 12 leading spaces.
+            cat << 'EOF' | sed 's/^            //' > PKGBUILD
             pkgname=quickshell-git
             pkgver=1.0.0
             pkgrel=1
@@ -111,6 +112,19 @@ jobs:
             # Prepare public directory for GitHub Pages
             mkdir -p /workspace/public/x86_64
             cp *.pkg.tar.zst /workspace/public/x86_64/
+            
+            # Create a landing page to prevent 404 at the root
+            cat << 'HTML' | sed 's/^            //' > /workspace/public/index.html
+            <!DOCTYPE html>
+            <html>
+            <head><title>Quickshell Pacman Repository</title></head>
+            <body>
+              <h1>Quickshell Custom Pacman Repository</h1>
+              <p>Add this to your /etc/pacman.conf:</p>
+              <pre>[quickshell]<br>Server = https://rust-frog.github.io/quickshell/x86_64</pre>
+            </body>
+            </html>
+            HTML
             
             cd /workspace/public/x86_64
             # Run repo-add as builduser to generate pacman DBs
