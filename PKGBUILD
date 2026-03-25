@@ -10,7 +10,7 @@ depends=('qt6-declarative' 'qt6-base' 'jemalloc' 'qt6-svg' 'libpipewire' 'libxcb
 makedepends=('spirv-tools' 'qt6-shadertools' 'wayland-protocols' 'cli11' 'ninja' 'cmake' 'git' 'vulkan-headers' 'libunwind')
 provides=('quickshell')
 conflicts=('quickshell')
-source=("quickshell::git+${QUICKSHELL_SRC:-https://github.com/Rust-Frog/quickshell.git}")
+source=("quickshell::git+file:///workspace") # CI (Docker). For local: git+file://$PWD
 sha256sums=('SKIP')
 
 pkgver() {
