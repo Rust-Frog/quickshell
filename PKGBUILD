@@ -1,6 +1,6 @@
 # Maintainer: Custom Build <none@example.com>
 pkgname=quickshell-git
-pkgver=1.0.0
+pkgver=792
 pkgrel=1
 pkgdesc="A quick shell"
 arch=('x86_64')
@@ -10,7 +10,7 @@ depends=('qt6-declarative' 'qt6-base' 'jemalloc' 'qt6-svg' 'libpipewire' 'libxcb
 makedepends=('spirv-tools' 'qt6-shadertools' 'wayland-protocols' 'cli11' 'ninja' 'cmake' 'git' 'vulkan-headers' 'libunwind')
 provides=('quickshell')
 conflicts=('quickshell')
-source=("quickshell::git+file:///workspace") # Point to the workspace root in Docker
+source=("quickshell::git+file://$PWD") # Works locally ($PWD) and in Docker (/workspace)
 sha256sums=('SKIP')
 
 pkgver() {
