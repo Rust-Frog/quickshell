@@ -176,7 +176,7 @@ void PwLinkGroup::onLinkRemoved(QObject* object) {
 	this->links.remove(link->id);
 
 	if (this->links.empty()) {
-		delete this;
+		this->deleteLater();
 	} else if (link == this->trackedLink) {
 		this->trackedLink = *this->links.begin();
 		QObject::connect(this->trackedLink, &PwLink::stateChanged, this, &PwLinkGroup::stateChanged);

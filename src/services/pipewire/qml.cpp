@@ -25,7 +25,7 @@ PwObjectIface::PwObjectIface(PwBindableObject* object): QObject(object), object(
 	QObject::connect(object, &PwBindableObject::destroying, this, &PwObjectIface::onObjectDestroying);
 }
 
-void PwObjectIface::onObjectDestroying() { delete this; }
+void PwObjectIface::onObjectDestroying() { this->deleteLater(); }
 
 void PwObjectIface::ref() {
 	this->refcount++;

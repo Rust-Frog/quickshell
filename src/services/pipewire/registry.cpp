@@ -46,7 +46,7 @@ void PwBindableObject::safeDestroy() {
 	qCDebug(logRegistry) << "Destroying object" << this;
 	emit this->destroying(this);
 	this->id = 0;
-	delete this;
+	this->deleteLater();
 }
 
 void PwBindableObject::debugId(QDebug& debug) const {
