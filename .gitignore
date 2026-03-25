@@ -18,3 +18,4 @@
 /.direnv/
 quickshell-git-792-1-x86_64.pkg.tar.zst
 quickshell-git-debug-792-1-x86_64.pkg.tar.zst
+src/quickshell
