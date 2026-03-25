@@ -2,8 +2,5 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/quickshell" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/quickshell/build/_deps/cpptrace-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/quickshell/build/_deps/libdwarf-src" vcs="Git" />
   </component>
 </project>
