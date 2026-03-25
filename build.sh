@@ -14,16 +14,6 @@ EOF
 pacman-key --init
 pacman-key --populate archlinux
 
-# Enable testing repos to match target system (Qt 6.11 lives here before stable)
-cat >> /etc/pacman.conf << 'EOF'
-
-[core-testing]
-Include = /etc/pacman.d/mirrorlist
-
-[extra-testing]
-Include = /etc/pacman.d/mirrorlist
-EOF
-
 echo "=== [1/5] Installing dependencies ==="
 pacman -Syyu --noconfirm --needed \
   cli11 cmake git jemalloc libdrm libpipewire libunwind libxcb mesa ninja polkit \
