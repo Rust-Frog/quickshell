@@ -14,8 +14,7 @@ source=("quickshell::git+file:///workspace") # Point to the workspace root in Do
 sha256sums=('SKIP')
 
 pkgver() {
-  cd quickshell
-  git describe --long --tags --abbrev=7 --exclude='*[a-zA-Z][a-zA-Z]*' 2>/dev/null | sed -E 's/^[^0-9]*//;s/([^-]*-g)/r\1/;s/-/./g' || echo "0.0.0.r$(git rev-list --count HEAD).g$(git rev-parse --short HEAD)"
+  git -C "$srcdir/quickshell" rev-list --count HEAD
 }
 
 build() {
