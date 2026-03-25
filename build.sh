@@ -3,8 +3,19 @@ set -euo pipefail
 
 WORKSPACE="${1:-/workspace}"
 
+echo "=== [0/5] Refreshing mirrors ==="
+# Force live Arch mirrors (Docker image uses stale snapshot mirrors)
+cat > /etc/pacman.d/mirrorlist << 'EOF'
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
+Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
+EOF
+
+# Initialize pacman keyring (Docker container has no signing keys)
+pacman-key --init
+pacman-key --populate archlinux
+
 echo "=== [1/5] Installing dependencies ==="
-pacman -Syu --noconfirm --needed \
+pacman -Syyu --noconfirm --needed \
   cli11 cmake git jemalloc libdrm libpipewire libunwind libxcb mesa ninja polkit \
   qt6-base qt6-declarative qt6-shadertools qt6-svg spirv-tools sudo vulkan-headers wayland wayland-protocols
 
