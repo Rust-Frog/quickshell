@@ -56,65 +56,24 @@ jobs:
           # Use an Arch Linux container via docker run to isolate the build environment
           docker run --rm -v ${{ github.workspace }}:/workspace archlinux:base-devel bash -c "
             set -e
-            # Update and install dependencies (ignore keyring errors if packages install fine)
+            # Update and install dependencies
             pacman -Sy --noconfirm --needed git sudo curl cmake ninja qt6-declarative wayland qt6-shadertools wayland-protocols cli11 spirv-tools
             
             cd /workspace
-            mkdir -p pkgbuild-dir
-            cd pkgbuild-dir
-
-            # Fetch AUR quickshell-check.hook
-            curl -sL -o quickshell-check.hook 'https://aur.archlinux.org/cgit/aur.git/plain/quickshell-check.hook?h=quickshell-git'
-            
-            # Generate PKGBUILD. Indented here, sed strips the 12 leading spaces.
-            cat << 'EOF' | sed 's/^            //' > PKGBUILD
-            pkgname=quickshell-git
-            pkgver=1.0.0
-            pkgrel=1
-            pkgdesc=\"A quick shell\"
-            arch=('x86_64')
-            url=\"https://github.com/${{ github.repository }}\"
-            license=('GPL')
-            depends=('qt6-declarative' 'wayland')
-            makedepends=('spirv-tools' 'qt6-shadertools' 'wayland' 'wayland-protocols' 'cli11' 'ninja' 'cmake' 'git')
-            provides=('quickshell')
-            conflicts=('quickshell')
-            source=(\"quickshell::git+file:///workspace\" \"quickshell-check.hook\")
-            sha256sums=('SKIP' 'SKIP')
-            
-            pkgver() {
-              cd quickshell
-              git describe --long --tags --abbrev=7 --exclude='*[a-zA-Z][a-zA-Z]*' 2>/dev/null | sed -E 's/^[^0-9]*//;s/([^-]*-g)/r\1/;s/-/./g' || echo \"0.0.0.r\$(git rev-list --count HEAD).g\$(git rev-parse --short HEAD)\"
-            }
-            
-            build() {
-              cd quickshell
-              cmake -GNinja -B build -DCMAKE_BUILD_TYPE=\"RelWithDebInfo\" -DCMAKE_INSTALL_PREFIX=/usr -DDISTRIBUTOR=\"Custom\" -DDISTRIBUTOR_DEBUGINFO_AVAILABLE=NO -DINSTALL_QML_PREFIX=lib/qt6/qml
-              cmake --build build
-            }
-            
-            package() {
-              install -Dm644 \"../quickshell-check.hook\" -t \"\$pkgdir/usr/share/libalpm/hooks\" || true
-              cd quickshell
-              DESTDIR=\"\$pkgdir\" cmake --install build
-              install -Dm644 \"LICENSE\" -t \"\$pkgdir/usr/share/licenses/quickshell\" || true
-            }
-            EOF
-            
             # Provide non-root user for makepkg
             useradd -m builduser
             echo 'builduser ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
             chown -R builduser:builduser /workspace
             
-            # Execute makepkg as builduser
+            # Execute makepkg using the repo's PKGBUILD
             sudo -u builduser bash -c 'export MAKEFLAGS=\"-j\$(nproc)\"; makepkg -s --noconfirm'
             
             # Prepare public directory for GitHub Pages
             mkdir -p /workspace/public/x86_64
             cp *.pkg.tar.zst /workspace/public/x86_64/
             
-            # Create a landing page to prevent 404 at the root
-            cat << 'HTML' | sed 's/^            //' > /workspace/public/index.html
+            # Create a landing page
+            cat << 'HTML' > /workspace/public/index.html
             <!DOCTYPE html>
             <html>
             <head><title>Quickshell Pacman Repository</title></head>
@@ -127,15 +86,15 @@ jobs:
             HTML
             
             cd /workspace/public/x86_64
-            # Run repo-add as builduser to generate pacman DBs
+            # Run repo-add
             sudo -u builduser bash -c 'repo-add quickshell.db.tar.gz *.pkg.tar.zst'
             
-            # repo-add creates symlinks .db -> .db.tar.gz, GitHub pages requires real files usually
+            # Prepare real files instead of symlinks
             rm quickshell.db quickshell.files
             cp quickshell.db.tar.gz quickshell.db
             cp quickshell.files.tar.gz quickshell.files
             
-            # Ensure actions-gh-pages can read the generated files
+            # Final permissions fix
             chmod -R 777 /workspace/public
           "
           
