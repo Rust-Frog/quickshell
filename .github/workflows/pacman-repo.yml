@@ -1,0 +1,105 @@
+name: Auto Sync and Build Quickshell
+
+on:
+  push:
+    branches:
+      - master
+      - root
+  schedule:
+    - cron: '0 2 * * *' # Every day at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      updated: ${{ steps.sync.outputs.updated }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Auto Sync upstream
+        id: sync
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/quickshell-mirror/quickshell.git || true
+          git fetch upstream master
+          OLD_HEAD=$(git rev-parse HEAD)
+          git merge upstream/master -m "Auto-merge upstream master"
+          NEW_HEAD=$(git rev-parse HEAD)
+          if [ "$OLD_HEAD" != "$NEW_HEAD" ]; then
+            git push origin HEAD
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: sync
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || needs.sync.outputs.updated == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push to gh-pages branch
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }} # Ensure we build the pushed/merged commit
+
+      - name: Build Package
+        run: |
+          # Use an Arch Linux container via docker run to isolate the build environment
+          docker run --rm -v ${{ github.workspace }}:/workspace archlinux:base-devel bash -c "
+            pacman -Syu --noconfirm git sudo curl cmake ninja qt6-declarative wayland qt6-shadertools wayland-protocols cli11 spirv-tools
+            
+            cd /workspace
+            mkdir -p pkgbuild-dir
+            cd pkgbuild-dir
+
+            # Fetch AUR PKGBUILD materials
+            curl -sLO 'https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=quickshell-git'
+            curl -sLO 'https://aur.archlinux.org/cgit/aur.git/plain/quickshell-check.hook?h=quickshell-git'
+            mv 'PKGBUILD?h=quickshell-git' PKGBUILD
+            mv 'quickshell-check.hook?h=quickshell-git' quickshell-check.hook
+            
+            # Patch URL and Source to build from our local workspace checkout rather than cloning from github again
+            sed -i 's|url=.*|url=\"https://github.com/${{ github.repository }}\"|g' PKGBUILD
+            sed -i 's|source=(.*|source=(\"quickshell::git+file:///workspace\" \"quickshell-check.hook\")|g' PKGBUILD
+            
+            # Provide non-root user for makepkg
+            useradd -m builduser
+            echo 'builduser ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+            chown -R builduser:builduser /workspace
+            
+            # Execute makepkg as builduser
+            sudo -u builduser bash -c 'export MAKEFLAGS=\"-j\$(nproc)\"; makepkg -s --noconfirm'
+            
+            # Prepare public directory for GitHub Pages
+            mkdir -p /workspace/public/x86_64
+            cp *.pkg.tar.zst /workspace/public/x86_64/
+            
+            cd /workspace/public/x86_64
+            # Run repo-add as builduser to generate pacman DBs
+            sudo -u builduser bash -c 'repo-add quickshell.db.tar.gz *.pkg.tar.zst'
+            
+            # repo-add creates symlinks .db -> .db.tar.gz, GitHub pages requires real files usually
+            rm quickshell.db quickshell.files
+            cp quickshell.db.tar.gz quickshell.db
+            cp quickshell.files.tar.gz quickshell.files
+            
+            # Ensure actions-gh-pages can read the generated files
+            chmod -R 777 /workspace/public
+          "
+          
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          keep_files: false
+          force_orphan: true
