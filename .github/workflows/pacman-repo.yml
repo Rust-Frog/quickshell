@@ -57,7 +57,9 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/workspace archlinux:base-devel bash -c "
             set -e
             # Update and install dependencies
-            pacman -Sy --noconfirm --needed git sudo curl cmake ninja qt6-declarative wayland qt6-shadertools wayland-protocols cli11 spirv-tools vulkan-headers libunwind
+            pacman -Sy --noconfirm --needed \
+              cli11 cmake git jemalloc libdrm libpipewire libunwind libxcb mesa ninja polkit \
+              qt6-base qt6-declarative qt6-shadertools qt6-svg spirv-tools sudo vulkan-headers wayland wayland-protocols
             
             cd /workspace
             # Provide non-root user for makepkg
