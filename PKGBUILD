@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://github.com/quickshell-mirror/quickshell"
 license=('GPL')
 depends=('qt6-declarative' 'qt6-base' 'jemalloc' 'qt6-svg' 'libpipewire' 'libxcb' 'wayland' 'libdrm' 'mesa' 'polkit')
-makedepends=('spirv-tools' 'qt6-shadertools' 'wayland' 'wayland-protocols' 'cli11' 'ninja' 'cmake' 'git' 'vulkan-headers' 'libunwind')
+makedepends=('spirv-tools' 'qt6-shadertools' 'wayland-protocols' 'cli11' 'ninja' 'cmake' 'git' 'vulkan-headers' 'libunwind')
 provides=('quickshell')
 conflicts=('quickshell')
 source=("quickshell::git+file:///workspace") # Point to the workspace root in Docker
@@ -33,4 +33,17 @@ package() {
   cd quickshell
   DESTDIR="$pkgdir" cmake --install build
   install -Dm644 "LICENSE" -t "$pkgdir/usr/share/licenses/quickshell" || true
+
+  # Remove vendored headers/libs that conflict with system packages
+  # (cpptrace, zstd, libdwarf, libelf)
+  rm -rf "$pkgdir"/usr/include/cpptrace
+  rm -rf "$pkgdir"/usr/include/ctrace
+  rm -f  "$pkgdir"/usr/include/dwarf.h
+  rm -f  "$pkgdir"/usr/include/zdict.h
+  rm -f  "$pkgdir"/usr/include/zstd.h
+  rm -f  "$pkgdir"/usr/include/zstd_errors.h
+  rm -rf "$pkgdir"/usr/lib/cmake/cpptrace
+  rm -rf "$pkgdir"/usr/lib/cmake/zstd
+  rm -f  "$pkgdir"/usr/lib/pkgconfig/libdwarf.pc
+  rm -f  "$pkgdir"/usr/lib/pkgconfig/libzstd.pc
 }
