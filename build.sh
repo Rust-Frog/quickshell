@@ -4,7 +4,7 @@ set -euo pipefail
 WORKSPACE="${1:-/workspace}"
 
 echo "=== [1/5] Installing dependencies ==="
-pacman -Sy --noconfirm --needed \
+pacman -Syu --noconfirm --needed \
   cli11 cmake git jemalloc libdrm libpipewire libunwind libxcb mesa ninja polkit \
   qt6-base qt6-declarative qt6-shadertools qt6-svg spirv-tools sudo vulkan-headers wayland wayland-protocols
 
