@@ -72,7 +72,7 @@ jobs:
             
             # Prepare public directory for GitHub Pages
             mkdir -p /workspace/public/x86_64
-            cp *.pkg.tar.zst /workspace/public/x86_64/
+            cp -v /workspace/*.pkg.tar.zst /workspace/public/x86_64/
             
             # Create a landing page
             cat << 'HTML' > /workspace/public/index.html
@@ -88,13 +88,19 @@ jobs:
             HTML
             
             cd /workspace/public/x86_64
-            # Run repo-add as root to avoid permission issues
-            repo-add quickshell.db.tar.gz *.pkg.tar.zst
+            echo "Current files in x86_64 before repo-add:"
+            ls -lh
+            
+            # Run repo-add with absolute database name
+            repo-add /workspace/public/x86_64/quickshell.db.tar.gz /workspace/public/x86_64/*.pkg.tar.zst
+            
+            echo "Current files in x86_64 after repo-add:"
+            ls -lh
             
             # Prepare real files instead of symlinks
             rm -f quickshell.db quickshell.files
-            cp quickshell.db.tar.gz quickshell.db
-            cp quickshell.files.tar.gz quickshell.files
+            cp -v quickshell.db.tar.gz quickshell.db
+            cp -v quickshell.files.tar.gz quickshell.files
             
             # Final permissions fix
             chmod -R 777 /workspace/public
