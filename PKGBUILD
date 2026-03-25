@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://github.com/quickshell-mirror/quickshell"
 license=('GPL')
 depends=('qt6-declarative' 'wayland')
-makedepends=('spirv-tools' 'qt6-shadertools' 'wayland' 'wayland-protocols' 'cli11' 'ninja' 'cmake' 'git')
+makedepends=('spirv-tools' 'qt6-shadertools' 'wayland' 'wayland-protocols' 'cli11' 'ninja' 'cmake' 'git' 'vulkan-headers' 'libunwind')
 provides=('quickshell')
 conflicts=('quickshell')
 source=("quickshell::git+file:///workspace") # Point to the workspace root in Docker
@@ -24,7 +24,8 @@ build() {
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DDISTRIBUTOR="Custom" \
     -DDISTRIBUTOR_DEBUGINFO_AVAILABLE=NO \
-    -DINSTALL_QML_PREFIX=lib/qt6/qml
+    -DINSTALL_QML_PREFIX=lib/qt6/qml \
+    -DVENDOR_CPPTRACE=ON
   cmake --build build
 }
 
