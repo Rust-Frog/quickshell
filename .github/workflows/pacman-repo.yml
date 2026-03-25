@@ -88,11 +88,11 @@ jobs:
             HTML
             
             cd /workspace/public/x86_64
-            # Run repo-add
-            sudo -u builduser bash -c 'repo-add quickshell.db.tar.gz *.pkg.tar.zst'
+            # Run repo-add as root to avoid permission issues
+            repo-add quickshell.db.tar.gz *.pkg.tar.zst
             
             # Prepare real files instead of symlinks
-            rm quickshell.db quickshell.files
+            rm -f quickshell.db quickshell.files
             cp quickshell.db.tar.gz quickshell.db
             cp quickshell.files.tar.gz quickshell.files
             
