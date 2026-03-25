@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Needed for pkgver() git describe0
+          fetch-depth: 0
 
       - name: Auto Sync upstream
         id: sync
@@ -44,68 +44,29 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || needs.sync.outputs.updated == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed to push to gh-pages branch
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }} # Ensure we build the pushed/merged commit
+          ref: ${{ github.ref }}
 
-      - name: Build Package
+      - name: Build Package in Arch Linux Container
         run: |
-          # Use an Arch Linux container via docker run to isolate the build environment
-          docker run --rm -v ${{ github.workspace }}:/workspace archlinux:base-devel bash -c "
-            set -e
-            # Update and install dependencies
-            pacman -Sy --noconfirm --needed \
-              cli11 cmake git jemalloc libdrm libpipewire libunwind libxcb mesa ninja polkit \
-              qt6-base qt6-declarative qt6-shadertools qt6-svg spirv-tools sudo vulkan-headers wayland wayland-protocols
-            
-            cd /workspace
-            # Provide non-root user for makepkg
-            useradd -m builduser
-            echo 'builduser ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-            chown -R builduser:builduser /workspace
-            
-            # Execute makepkg using the repo's PKGBUILD
-            sudo -u builduser bash -c 'export MAKEFLAGS=\"-j\$(nproc)\"; makepkg -s --noconfirm'
-            
-            # Prepare public directory for GitHub Pages
-            mkdir -p /workspace/public/x86_64
-            cp -v /workspace/*.pkg.tar.zst /workspace/public/x86_64/
-            
-            # Create a landing page
-            cat << 'HTML' > /workspace/public/index.html
-            <!DOCTYPE html>
-            <html>
-            <head><title>Quickshell Pacman Repository</title></head>
-            <body>
-              <h1>Quickshell Custom Pacman Repository</h1>
-              <p>Add this to your /etc/pacman.conf:</p>
-              <pre>[quickshell]<br>Server = https://rust-frog.github.io/quickshell/x86_64</pre>
-            </body>
-            </html>
-            HTML
-            
-            cd /workspace/public/x86_64
-            echo "Current files in x86_64 before repo-add:"
-            ls -lh
-            
-            # Run repo-add with absolute database name
-            repo-add /workspace/public/x86_64/quickshell.db.tar.gz /workspace/public/x86_64/*.pkg.tar.zst
-            
-            echo "Current files in x86_64 after repo-add:"
-            ls -lh
-            
-            # Prepare real files instead of symlinks
-            rm -f quickshell.db quickshell.files
-            cp -v quickshell.db.tar.gz quickshell.db
-            cp -v quickshell.files.tar.gz quickshell.files
-            
-            # Final permissions fix
-            chmod -R 777 /workspace/public
-          "
-          
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            archlinux:base-devel \
+            bash /workspace/build.sh /workspace
+
+      - name: Verify repo database exists
+        run: |
+          echo "=== Checking repository files ==="
+          ls -lh public/x86_64/
+          test -f public/x86_64/quickshell.db || { echo "FATAL: quickshell.db missing!"; exit 1; }
+          test -f public/x86_64/quickshell.files || { echo "FATAL: quickshell.files missing!"; exit 1; }
+          test -f public/x86_64/quickshell.db.tar.gz || { echo "FATAL: quickshell.db.tar.gz missing!"; exit 1; }
+          echo "✅ All repository files present"
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
