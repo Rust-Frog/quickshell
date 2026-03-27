@@ -98,8 +98,8 @@ void RetainableLock::setObject(QObject* object) {
 
 	if (this->mObject) {
 		QObject::disconnect(this->mObject, nullptr, this, nullptr);
-		if (this->hook->isRetained()) emit this->retainedChanged();
-		this->hook->unref();
+		if (this->hook && this->hook->isRetained()) emit this->retainedChanged();
+		if (this->hook) this->hook->unref();
 	}
 
 	this->mObject = nullptr;
