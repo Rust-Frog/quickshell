@@ -54,10 +54,10 @@ jobs:
 
       - name: Build Package in Arch Linux Container
         run: |
-          docker run --rm \
+          docker run --rm --pull always \
             -v "${{ github.workspace }}:/workspace" \
             archlinux:base-devel \
-            bash /workspace/build.sh /workspace
+            bash -c "pacman -Syuu --noconfirm && bash /workspace/build.sh /workspace"
 
       - name: Verify repo database exists
         run: |
