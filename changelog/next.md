@@ -29,6 +29,7 @@ set shell id.
 - Added generic WindowManager interface implementing ext-workspace.
 - Added ext-background-effect window blur support.
 - Added per-corner radius support to Region.
+- Added ColorQuantizer region selection.
 
 ## Other Changes
 
@@ -64,6 +65,7 @@ set shell id.
 - Fixed partial socket reads in greetd and hyprland on slow machines.
 - Worked around Qt bug causing crashes when plugging and unplugging monitors.
 - Fixed HyprlandFocusGrab crashing if windows were destroyed after being passed to it.
+- Fixed ScreencopyView pixelation when scaled.
 
 ## Packaging Changes
 
