@@ -8,6 +8,7 @@
 #include <qguiapplication.h>
 #include <qicon.h>
 #include <qjsengine.h>
+#include <qlibraryinfo.h>
 #include <qlist.h>
 #include <qlogging.h>
 #include <qobject.h>
@@ -18,6 +19,7 @@
 #include <qscreen.h>
 #include <qtenvironmentvariables.h>
 #include <qtmetamacros.h>
+#include <qtversion.h>
 #include <qtypes.h>
 #include <qvariant.h>
 #include <qwindowdefs.h>
@@ -341,6 +343,12 @@ bool QuickshellGlobal::hasVersion(qint32 major, qint32 minor, const QStringList&
 
 bool QuickshellGlobal::hasVersion(qint32 major, qint32 minor) {
 	return QuickshellGlobal::hasVersion(major, minor, QStringList());
+}
+
+bool QuickshellGlobal::hasQtVersion(int major, int minor) {
+	auto qtVersion = QVersionNumber::fromString(qVersion());
+	auto requiredVersion = QVersionNumber(major, minor);
+	return qtVersion >= requiredVersion;
 }
 
 QuickshellGlobal* QuickshellGlobal::create(QQmlEngine* engine, QJSEngine* /*unused*/) {
